@@ -1,0 +1,28 @@
+{
+  "name": "qwen-auth",
+  "version": "1.0.0",
+  "description": "Simple Qwen API authentication script",
+  "main": "auth.js",
+  "scripts": {
+    "auth": "node auth.js",
+    "check": "node auth.js check",
+    "clear": "node auth.js clear",
+    "help": "node auth.js help"
+  },
+  "dependencies": {
+    "undici": "^5.28.0",
+    "qrcode-terminal": "^0.12.0",
+    "open": "^9.1.0"
+  },
+  "keywords": [
+    "qwen",
+    "api",
+    "authentication",
+    "oauth"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
