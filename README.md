@@ -32,6 +32,33 @@ npm run check
 npm run clear
 ```
 
+## Using Your API Key
+
+Once you get your API key, use it to make requests to the Qwen API:
+
+**Endpoint:** `https://portal.qwen.ai/v1/chat/completions`
+
+**Example curl command:**
+```bash
+curl -X POST "https://portal.qwen.ai/v1/chat/completions" \
+  -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "model": "qwen3-coder-plus",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Write a simple Python function to calculate fibonacci numbers"
+      }
+    ],
+    "temperature": 0.7,
+    "max_tokens": 1000
+  }'
+```
+
+Replace `YOUR_API_KEY_HERE` with the actual API key you get from running `npm run auth`.
+
 ## What happens when you authenticate
 
 1. Run `npm run auth`
@@ -39,33 +66,8 @@ npm run clear
 3. Login to Qwen in your browser
 4. The script will save your tokens
 
-## Output
-
-You get your tokens like this:
-
-```json
-{
-  "access_token": "your_token_here",
-  "refresh_token": "your_refresh_token_here",
-  "token_type": "Bearer",
-  "resource_url": "portal.qwen.ai",
-  "expiry_date": 1756446184390
-}
-```
-
 ## Troubleshooting
 
 **No credentials found**: Run `npm run auth`
 
 **Token expired**: Run `npm run auth` again
-
-**Browser didn't open**: Copy the URL and paste it in your browser
-
-**Permission denied**: You clicked "deny" in the browser - try again and click "allow"
-
-## Requirements
-
-- Node.js 16 or newer
-- Internet connection
-
-That's it.
