@@ -4,9 +4,11 @@ Get access tokens for the Qwen API.
 
 ## Setup
 
-1. Save these files in a folder:
-   - `auth.js`
-   - `package.json`
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/coffeegrind123/qwen3-auth.git
+   cd qwen3-auth
+   ```
 
 2. Install dependencies:
    ```bash
