@@ -29,9 +29,10 @@ function generateCodeChallenge(codeVerifier) {
 }
 
 class QwenAuth {
-  constructor() {
+  constructor(keyOnly = false) {
     this.qwenDir = path.join(process.env.HOME || process.env.USERPROFILE, CONFIG.QWEN_DIR);
     this.credentialsPath = path.join(this.qwenDir, CONFIG.CREDENTIALS_FILE);
+    this.keyOnly = keyOnly;
   }
 
   // Ensure the .qwen directory exists
@@ -235,6 +236,11 @@ class QwenAuth {
 
   // Format and display credentials
   displayCredentials(credentials) {
+    if (this.keyOnly) {
+      console.log(credentials.access_token);
+      return;
+    }
+
     console.log('\n' + '='.repeat(60));
     console.log('AUTHENTICATION SUCCESSFUL!');
     console.log('='.repeat(60));
@@ -289,7 +295,16 @@ async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   
-  const auth = new QwenAuth();
+  // Check for --key-only flag
+  const keyOnlyIndex = args.indexOf('--key-only');
+  const keyOnly = keyOnlyIndex !== -1;
+  
+  // Remove the flag from args if present
+  if (keyOnlyIndex !== -1) {
+    args.splice(keyOnlyIndex, 1);
+  }
+  
+  const auth = new QwenAuth(keyOnly);
   
   switch (command) {
     case 'check':
@@ -326,10 +341,13 @@ async function main() {
     case '-h':
       console.log('Qwen Authentication Script');
       console.log('\nUsage:');
-      console.log('  node auth.js         # Authenticate (default)');
-      console.log('  node auth.js check   # Check existing credentials');
-      console.log('  node auth.js clear   # Clear stored credentials');
-      console.log('  node auth.js help    # Show this help');
+      console.log('  node auth.js                # Authenticate (default)');
+      console.log('  node auth.js --key-only     # Authenticate and only print the API key');
+      console.log('  node auth.js check          # Check existing credentials');
+      console.log('  node auth.js clear          # Clear stored credentials');
+      console.log('  node auth.js help           # Show this help');
+      console.log('\nFlags:');
+      console.log('  --key-only                  # Only print the API key after authentication');
       break;
       
     default:
