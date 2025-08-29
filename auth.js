@@ -12,12 +12,15 @@ const CONFIG = {
   QWEN_DIR: '.qwen',
   CREDENTIALS_FILE: 'oauth_creds.json',
   OAUTH_BASE_URL: 'https://chat.qwen.ai',
-  CLIENT_ID: 'f0304373b74a44d2b584a3fb70ca9e56',
   SCOPE: 'openid profile email model.completion',
   GRANT_TYPE: 'urn:ietf:params:oauth:grant-type:device_code'
 };
 
-// PKCE Helper Functions
+// Helper Functions
+function generateRandomClientId() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
 function generateCodeVerifier() {
   return crypto.randomBytes(32).toString('base64url');
 }
@@ -32,6 +35,7 @@ class QwenAuth {
   constructor() {
     this.qwenDir = path.join(process.env.HOME || process.env.USERPROFILE, CONFIG.QWEN_DIR);
     this.credentialsPath = path.join(this.qwenDir, CONFIG.CREDENTIALS_FILE);
+    this.clientId = generateRandomClientId();
   }
 
   // Ensure the .qwen directory exists
@@ -69,12 +73,12 @@ class QwenAuth {
 
   // Refresh access token using refresh token
   async refreshToken(credentials) {
-    console.log('Refreshing access token...');
+    console.log('Refreshing authentication token...');
     
     const bodyData = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: credentials.refresh_token,
-      client_id: CONFIG.CLIENT_ID,
+      client_id: this.clientId,
     });
 
     try {
@@ -102,7 +106,7 @@ class QwenAuth {
       };
 
       await this.saveCredentials(newCredentials);
-      console.log('Token refreshed successfully!\n');
+      console.log('Token refresh completed successfully.\n');
       return newCredentials;
     } catch (error) {
       throw new Error(`Failed to refresh token: ${error.message}`);
@@ -115,7 +119,7 @@ class QwenAuth {
     const codeChallenge = generateCodeChallenge(codeVerifier);
 
     const bodyData = new URLSearchParams({
-      client_id: CONFIG.CLIENT_ID,
+      client_id: this.clientId,
       scope: CONFIG.SCOPE,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
@@ -149,12 +153,12 @@ class QwenAuth {
     const maxAttempts = 60; // 5 minutes max
     let pollInterval = 5000; // 5 seconds
 
-    console.log('Waiting for authorization...');
+    console.log('Awaiting user authorization...');
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const bodyData = new URLSearchParams({
         grant_type: CONFIG.GRANT_TYPE,
-        client_id: CONFIG.CLIENT_ID,
+        client_id: this.clientId,
         device_code: deviceCode,
         code_verifier: codeVerifier,
       });
@@ -220,40 +224,41 @@ class QwenAuth {
   // Display authorization instructions
   displayAuthInstructions(deviceFlow) {
     console.log('\n' + '='.repeat(60));
-    console.log('QWEN AUTHENTICATION REQUIRED');
+    console.log('QWEN API AUTHENTICATION');
     console.log('='.repeat(60));
-    console.log('\nPlease visit this URL to authenticate:');
-    console.log(`\n   ${deviceFlow.verification_uri_complete}\n`);
+    console.log('\nPlease complete authentication by visiting:');
+    console.log(`\n${deviceFlow.verification_uri_complete}\n`);
     
-    console.log('User Code:', deviceFlow.user_code);
-    console.log('\nOr scan this QR code:');
+    console.log('Authorization Code:', deviceFlow.user_code);
+    console.log('\nAlternatively, scan the QR code below:');
     
     qrcode.generate(deviceFlow.verification_uri_complete, { small: true });
     
-    console.log('\nPress Ctrl+C to cancel\n');
+    console.log('\nPress Ctrl+C to cancel authentication process\n');
   }
 
   // Format and display credentials
   displayCredentials(credentials) {
     console.log('\n' + '='.repeat(60));
-    console.log('AUTHENTICATION SUCCESSFUL!');
+    console.log('AUTHENTICATION COMPLETED');
     console.log('='.repeat(60));
     
-    console.log('\nYour qwen api key is');
+    console.log('\nAPI Key:');
     console.log(credentials.access_token);
     
     const expiryDate = new Date(credentials.expiry_date);
-    console.log(`\nToken expires: ${expiryDate.toLocaleString()}`);
-    console.log(`Saved to: ${this.credentialsPath}`);
+    console.log(`\nExpiration: ${expiryDate.toLocaleString()}`);
+    console.log(`Storage Location: ${this.credentialsPath}`);
+    console.log('\nAuthentication process completed successfully.');
   }
 
   // Main authentication flow
   async authenticate() {
     try {
-      console.log('Starting Qwen authentication...\n');
+      console.log('Initializing Qwen API authentication...\n');
       
       // Start new authentication flow
-      console.log('Initiating OAuth device flow...');
+      console.log('Initiating OAuth device authorization...');
       const deviceFlow = await this.initiateDeviceFlow();
       
       this.displayAuthInstructions(deviceFlow);
@@ -261,9 +266,9 @@ class QwenAuth {
       // Try to open browser automatically
       try {
         await open(deviceFlow.verification_uri_complete);
-        console.log('Browser opened automatically');
+        console.log('Default browser launched automatically');
       } catch (error) {
-        console.log('Please open the URL manually in your browser');
+        console.log('Please manually open the provided URL in your browser');
       }
       
       // Poll for token
@@ -293,21 +298,21 @@ async function main() {
   
   switch (command) {
     case 'check':
-      console.log('Checking existing credentials...\n');
+      console.log('Verifying existing credentials...\n');
       const credentials = await auth.loadCredentials();
       if (credentials) {
         if (auth.isTokenValid(credentials)) {
-          console.log('Valid credentials found!');
+          console.log('Valid credentials located.');
           auth.displayCredentials(credentials);
         } else {
-          console.log('Credentials found but expired');
+          console.log('Credentials found but expired.');
           const expiryDate = new Date(credentials.expiry_date);
-          console.log(`   Expired: ${expiryDate.toLocaleString()}`);
-          console.log('\nRun without arguments to refresh or re-authenticate');
+          console.log(`Expiration date: ${expiryDate.toLocaleString()}`);
+          console.log('\nExecute without arguments to re-authenticate.');
         }
       } else {
-        console.log('No credentials found');
-        console.log('Run without arguments to authenticate');
+        console.log('No credentials found.');
+        console.log('Execute without arguments to authenticate.');
       }
       break;
       
@@ -315,9 +320,9 @@ async function main() {
       try {
         await auth.saveCredentials({});
         await require('fs').promises.unlink(auth.credentialsPath);
-        console.log('Credentials cleared successfully!');
+        console.log('Credentials cleared successfully.');
       } catch (error) {
-        console.log('No credentials to clear');
+        console.log('No credentials to clear.');
       }
       break;
       
@@ -341,7 +346,7 @@ async function main() {
 // Run the script
 if (require.main === module) {
   main().catch(error => {
-    console.error('\nUnexpected error:', error.message);
+    console.error('\nOperation failed:', error.message);
     process.exit(1);
   });
 }
