@@ -239,13 +239,12 @@ class QwenAuth {
     console.log('AUTHENTICATION SUCCESSFUL!');
     console.log('='.repeat(60));
     
-    console.log('\nYour access token credentials:');
-    console.log('\n' + JSON.stringify(credentials, null, 2));
+    console.log('\nYour qwen api key is');
+    console.log(credentials.access_token);
     
     const expiryDate = new Date(credentials.expiry_date);
     console.log(`\nToken expires: ${expiryDate.toLocaleString()}`);
     console.log(`Saved to: ${this.credentialsPath}`);
-    console.log('\nYou can now use the Qwen API with these credentials!');
   }
 
   // Main authentication flow
